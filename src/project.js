@@ -34,15 +34,15 @@ class Project {
 			defaultVert,
 			defaultFrag);
 
-		// Setup enviorment
-		this.lua.doString(luaRequire);
-		this.lua.doString(luaNamespace);
-
 		// Setup our javascript bindings
+		this.lua.global.set("__window", new Window(this));
 		this.lua.global.set("__keyboard", new Keyboard(this));
 		this.lua.global.set("__graphics", new Graphics(this));
 		this.lua.global.set("__math", MathModule);
-		this.lua.global.set("__window", new Window(this));
+
+		// Setup enviorment
+		this.lua.doString(luaRequire);
+		this.lua.doString(luaNamespace);
 
 		// User setup (if it have one)
 		if (files["conf.lua"])
