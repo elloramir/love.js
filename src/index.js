@@ -4,7 +4,7 @@
 
 import Project from "./project.js";
 
-Project.loadFromFile("game.love").then(project => {
+Project.loadFromFile("basic.love").then(project => {
 	document.body.appendChild(project.canvas);
 	project.mainLoop();
 });

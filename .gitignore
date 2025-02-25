@@ -1,4 +1,3 @@
 node_modules
-dist/*.love
 dist/*.lua
-dist/bundle.js
+dist/*.js
