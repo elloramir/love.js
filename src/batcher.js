@@ -7,9 +7,9 @@ import ImageModel from "./models/image.js"
 
 export default
 class Batcher {
-	constructor(project, maxQuads=1024) {
-		this.screen = project.canvas;
-		this.gl = project.gl;
+	constructor(gl, maxQuads=1024) {
+		this.gl = gl;
+		this.screen = gl.canvas;
 
 		this.vbo = this.gl.createBuffer();
 		this.ibo = this.gl.createBuffer();

@@ -60,8 +60,8 @@ export async function wait(seconds) {
 }
 
 export function sanitizeFilename(fontPath) {
-    const fileName = fontPath.split('/').pop().split('.').slice(0, -1).join('.');
-    const sanitized = fileName.replace(/[_\.]+/g, ' ');
+	const fileName = fontPath.split('/').pop().split('.').slice(0, -1).join('.');
+	const sanitized = fileName.replace(/[_\.]+/g, ' ');
 
-    return sanitized;
+	return sanitized;
 };

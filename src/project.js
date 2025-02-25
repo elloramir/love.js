@@ -6,7 +6,6 @@ import JSZip from "jszip";
 import { LuaFactory } from "wasmoon";
 import { createCanvas } from "./helpers.js";
 import Batcher from "./batcher.js";
-import Shader from "./models/shader.js";
 import luaRequire from "./lua/require.lua";
 import luaNamespace from "./lua/namespace.lua";
 import defaultFrag from "./shaders/default.frag.glsl";
@@ -15,6 +14,7 @@ import Graphics from "./modules/graphics.js";
 import MathModule from "./modules/math.js";
 import Window from "./modules/window.js";
 import Keyboard from "./modules/keyboard.js";
+import Shader from "./models/shader.js";
 
 export default
 class Project {
@@ -23,26 +23,26 @@ class Project {
 		this.lua = virtualMachine;
 		this.pastTime = 0;
 		this.deltaTime = 0;
-		this.targetFPS = 10;
+		this.targetFPS = 60;
 		this.timeCAP = 1/this.targetFPS;
+
 		this.canvas = createCanvas(800, 600);
 		this.gl = this.canvas.getContext("webgl");
+		this.batcher = new Batcher(this.gl);
 
 		this.defaultShader = new Shader(this.gl,
 			defaultVert,
 			defaultFrag);
 
-		this.batcher = new Batcher(this);
+		// Setup enviorment
+		this.lua.doString(luaRequire);
+		this.lua.doString(luaNamespace);
 
 		// Setup our javascript bindings
 		this.lua.global.set("__keyboard", new Keyboard(this));
 		this.lua.global.set("__graphics", new Graphics(this));
 		this.lua.global.set("__math", MathModule);
 		this.lua.global.set("__window", new Window(this));
-
-		// Setup enviorment
-		this.lua.doString(luaRequire);
-		this.lua.doString(luaNamespace);
 
 		// User setup (if it have one)
 		if (files["conf.lua"])

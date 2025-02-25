@@ -2,19 +2,22 @@
 // Use of this source code is governed by a MIT
 // license that can be found in the LICENSE file.
 
+import Font from "../models/font.js";
+
+
 export default
 class Graphics {
 	constructor(project) {
 		this.batcher = project.batcher;
-		this.color = [1, 1, 1, 1];
+		this.defaultFont = new Font(project.gl, "Arial", 20, false);
 	}
 
 	setColor(r, g, b, a=1) {
 		this.batcher.setColor(r, g, b, a);
 	}
 
-	print() {
-		
+	print(str, x, y) {
+		this.batcher.drawStr(this.defaultFont, str, x, y);
 	}
 
 	// @todo: Segments, round corner and mode

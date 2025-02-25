@@ -5,9 +5,9 @@
 export default
 class MathModule {
 	static random(min, max) {
-        if (!min && !max) return Math.random();
-        if (!max) return Math.random() * min;
-        return Math.random() * (max - min) + min;
+		if (!min && !max) return Math.random();
+		if (!max) return Math.random() * min;
+		return Math.random() * (max - min) + min;
 	}
 }
 
