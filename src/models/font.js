@@ -5,9 +5,8 @@
 import { uuid, createCanvas, sanitizeFilename } from "../helpers.js"
 import ImageModel from "./image.js"
 
-
-// @todo: it only works (barley) for pixel art fonts for now.
-// It could be improved on future, but for now it's okay.
+// @todo: It only works (barely) for pixel art fonts for now.
+// It could be improved in the future, but for now, it's okay.
 export default
 class Font {
 	static ASCII =
@@ -33,23 +32,23 @@ class Font {
 	}
 	
 	generateAtlas() {
-		// Aumentar o tamanho do atlas para evitar sobreposições
+		// Increase the atlas size to avoid overlapping
 		const atlasWidth = 1024;
 		const atlasHeight = 1024;
 		const canvas = createCanvas(atlasWidth, atlasHeight, this.isLowscale);
 		const ctx = canvas.getContext("2d");
 		
-		// Aumentar o padding para evitar vazamentos entre caracteres
-		const padding = 4; // Aumento do padding para evitar vazamentos
+		// Increase padding to prevent character bleeding
+		const padding = 4; // Increased padding to prevent bleeding
 		const maxHeight = this.size + padding * 2;
 		
-		// Limpar o canvas com cor transparente para não haver resíduos
+		// Clear the canvas with a transparent color to avoid residues
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 		
-		// Configuração para renderizar nosso conjunto de glifos
+		// Configuration to render our glyph set
 		ctx.fillStyle = "white";
 		ctx.font = `${this.size}px ${this.fontName}`;
-		ctx.textBaseline = "top"; // Consistência no posicionamento vertical
+		ctx.textBaseline = "top"; // Ensuring vertical alignment consistency
 		
 		let x = padding;
 		let y = padding;
@@ -57,63 +56,63 @@ class Font {
 		
 		this.glyphset.split("").forEach(char => {
 			const metrics = ctx.measureText(char);
-			// Calculamos a largura real do caractere 
+			// Calculate the actual character width
 			const charWidth = Math.ceil(metrics.width) + padding * 2;
 			
-			// Se não há espaço suficiente na linha atual, pule para a próxima
+			// If there's not enough space on the current line, move to the next
 			if (x + charWidth > atlasWidth - padding) {
 				x = padding;
 				y += lineHeight;
 			}
 			
-			// Limpar a área específica para este caractere completamente
+			// Clear the specific area for this character completely
 			ctx.clearRect(x - padding, y - padding, charWidth + padding, lineHeight + padding);
 			
-			// Desenhar o caractere centralizado em sua área
+			// Draw the character centered in its area
 			ctx.fillText(char, x, y);
 			
-			// Salvar métricas para uso posterior
+			// Save metrics for later use
 			this.glyphs.set(char, {
 				width: metrics.width,
 				height: this.size,
 				advanceX: metrics.width + padding,
-				// Coordenadas UV com margens seguras para evitar vazamentos
+				// UV coordinates with safe margins to prevent bleeding
 				u1: (x) / atlasWidth,
 				v1: y / atlasHeight,
 				u2: (x + metrics.width) / atlasWidth,
 				v2: (y + this.size) / atlasHeight
 			});
 			
-			// Avançar para o próximo caractere com padding adicional entre eles
+			// Move to the next character with additional padding
 			x += charWidth;
 		});
 		
-		// Aplicar tratamento de borda nítida se necessário
+		// Apply sharp edge preservation if necessary
 		if (this.isLowscale) {
-			this.preserveCrispEdges(canvas, 0.4); // Threshold ajustado para melhor detecção de bordas
+			this.preserveCrispEdges(canvas, 0.4); // Adjusted threshold for better edge detection
 		}
 		
 		this.atlas = new ImageModel(this.gl, canvas);
 	}
 	
-	// Melhoria na função de preservação de bordas nítidas
+	// Improved sharp edge preservation function
 	preserveCrispEdges(canvas, threshold) {
 		const ctx = canvas.getContext("2d");
 		const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 		const data = imageData.data;
 		
-		// Primeiro passo: Detectar e limpar áreas de baixa opacidade
+		// First step: Detect and clear low-opacity areas
 		for (let i = 0; i < data.length; i += 4) {
 			const alpha = data[i + 3] / 255;
 			
 			if (alpha < threshold) {
-				// Limpar completamente pixels de baixa opacidade
+				// Completely clear low-opacity pixels
 				data[i + 0] = 0;
 				data[i + 1] = 0;
 				data[i + 2] = 0;
 				data[i + 3] = 0;
 			} else {
-				// Maximizar a opacidade para pixels acima do limiar
+				// Maximize opacity for pixels above the threshold
 				data[i + 0] = 255;
 				data[i + 1] = 255;
 				data[i + 2] = 255;
