@@ -7,4 +7,8 @@ class Source {
     constructor() {
         
     }
+
+    setLooping() {
+        
+    }
 };

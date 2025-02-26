@@ -1,10 +1,10 @@
 // Copyright 2025 Elloramir. All rights reserved.
-// Use of this source code is governed by a MIT
-// license that can be found in the LICENSE file.
+// Use of this source code is governed by a MIT license
 
 import JSZip from "jszip";
 import { LuaFactory } from "wasmoon";
 import { createCanvas } from "./helpers.js";
+import { imageLoader } from "./loaders.js";
 import Batcher from "./batcher.js";
 import luaRequire from "./lua/require.lua";
 import luaNamespace from "./lua/namespace.lua";
@@ -20,8 +20,7 @@ import Physics from "./modules/physics.js";
 import Keyboard from "./modules/keyboard.js";
 import Shader from "./models/shader.js";
 
-export default
-class Project {
+export default class Project {
 	constructor(files, virtualMachine) {
 		this.files = files;
 		this.lua = virtualMachine;
@@ -33,16 +32,18 @@ class Project {
 		this.canvas = createCanvas(800, 600);
 		this.gl = this.canvas.getContext("webgl");
 		this.batcher = new Batcher(this.gl);
-
-		this.defaultShader = new Shader(this.gl,
-			defaultVert,
-			defaultFrag);
+		this.defaultShader = new Shader(this.gl, defaultVert, defaultFrag);
 
 		this.setup();
 	}
 
 	async setup() {
-		// Setup our javascript bindings
+		// Preload all content
+		for (const [key, content] of this.files) {
+			this.files[key] = await content;
+		}
+
+		// Setup JS bindings
 		await this.lua.global.set("__getScript", this.getString.bind(this));
 		await this.lua.global.set("__physics", new Physics(this));
 		await this.lua.global.set("__audio", new Audio(this));
@@ -53,50 +54,56 @@ class Project {
 		await this.lua.global.set("__timer", new Timer(this));
 		await this.lua.global.set("__math", MathModule);
 
-		// Setup enviorment
+		// Setup environment
 		await this.lua.doString(luaRequire);
 		await this.lua.doString(luaNamespace);
 
-		// User setup (if it have one)
-		if (this.files["conf.lua"])
+		// Load config if available
+		if (this.files.get("conf.lua"))
 			await this.lua.doString(this.getString("conf.lua"));
 		
-		// Finaly boot the entry
+		// Boot the entry point
 		await this.lua.doString(this.getString("main.lua"));
 
-		// Save global namespace reference for love
+		// Get love reference
 		this.love = await this.lua.global.get("love");
 		this.love.load();
 
-		// Boot game loop
+		// Start game loop
 		this.mainLoop();
 	}
 
 	static async loadFromFile(filename) {
 		const response = await fetch(filename);
-
 		if (!response.ok)
-			throw `Could not found project: ${filename}`;
+			throw `Could not find project: ${filename}`;
 
 		const blob = await response.blob();
 		const zip = await JSZip.loadAsync(blob);
 
 		// Extract files from .zip/.love
-		const files = {};
-		for (const fileName of Object.keys(zip.files)) {
-			if (!zip.files[fileName].dir) {
-				// Considerer all files as uint8array
-				files[fileName] = await zip.files[fileName].async("uint8array");
-			}
+		const files = new Map();
+		const imageExtensions = ['png', 'jpg', 'jpeg', 'gif'];
+
+		for (const zipFilename of Object.keys(zip.files)) {
+			if (zip.files[zipFilename].dir) continue;
+
+			const fileData = await zip.files[zipFilename].async("uint8array");
+			const extension = zipFilename.split('.').pop().toLowerCase();
+			
+			// Process images differently, other files as binary
+			const media = imageExtensions.includes(extension) 
+				? imageLoader(fileData) 
+				: Promise.resolve(fileData);
+				
+			files.set(zipFilename, media);
 		}
 
-		if (!files["main.lua"])
-			throw "No entry point was found";
+		if (!files.get("main.lua"))
+			throw "No entry point found";
 
-		// Create lua VM
-		const factory = new LuaFactory();
-		const virtualMachine = await factory.createEngine();
-
+		// Create Lua VM
+		const virtualMachine = await new LuaFactory().createEngine();
 		return new Project(files, virtualMachine);
 	}
 
@@ -106,21 +113,15 @@ class Project {
 
 	getString(filename) {
 		const arr = this.files[filename];
-		const str = new TextDecoder("utf-8").decode(arr);
-
-		return str;
+		return new TextDecoder("utf-8").decode(arr);
 	}
 
-	mainLoop(currentTime=0) {
-		this.deltaTime += (currentTime - this.pastTime) / 1000;
+	mainLoop(currentTime = 0) {
+		this.deltaTime = (currentTime - this.pastTime) / 1000;
 		this.pastTime = currentTime;
 
-		while (this.deltaTime >= this.timeCAP) {
-			// Game tick goes here
-			this.love.update(this.deltaTime);
-			this.deltaTime -= this.timeCAP;
-		}
-
+		this.love.update(this.deltaTime);
+		
 		this.batcher.frame();
 		this.batcher.setShader(this.defaultShader);
 		this.love.draw();

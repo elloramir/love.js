@@ -5,7 +5,6 @@
   },
   "dependencies": {
     "jszip": "^3.10.1",
-    "pako": "^2.1.0",
     "wasmoon": "^1.16.0"
   },
   "devDependencies": {

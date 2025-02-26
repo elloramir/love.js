@@ -11,6 +11,8 @@ export default
 class Graphics {
 	constructor(project) {
 		this.project = project;
+		this.width = project.canvas.width;
+		this.height = project.canvas.height;
 		this.batcher = project.batcher;
 		this.defaultFont = new Font(project.gl, "Arial", 20, false);
 	}
@@ -39,16 +41,14 @@ class Graphics {
 		if (!data)
 			throw "No data found for the image: " + filename;
 
-		const image = imageLoader(data);
-		if (!image)
-			throw "Image format not supported: " + filename;
-
-		const model = new ImageModel(this.project.gl, image);
+		const model = new ImageModel(this.project.gl, data);
 		
 		return model;
 	}
 
+	getDefaultFilter() {return"nearest";}
 	setLineStyle() {}
+	setFont() {}
 	setDefaultFilter() {}
 	setCanvas() {}
 	clear() {}
@@ -56,6 +56,9 @@ class Graphics {
 	pop() {}
 	translate() {}
 	scale() {}
+
+	getHeight() { return this.height; }
+	getWidth() { return this.width; }
 
 	getDimensions() { return 0 }
 
@@ -77,5 +80,9 @@ class Graphics {
 
 	newCanvas() {
 		return {};
+	}
+
+	draw(tex, x, y, r, sx, sy, ox, oy, kx, ky ) {
+		this.batcher.drawTex(tex, x, y);
 	}
 }

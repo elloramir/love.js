@@ -12,4 +12,8 @@ class Audio {
     newSource(filename) {
         return new Source();
     }
+
+    play() {
+        
+    }
 }

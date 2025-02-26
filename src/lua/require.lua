@@ -1,7 +1,6 @@
 local originalRequire = require
 
 function require(modname)
-    print(modname)
     if package.loaded[modname] then
         return package.loaded[modname]
     end
@@ -12,7 +11,7 @@ function require(modname)
         dir .. ".lua",
         dir .. "/init.lua"
     }
-    
+
     for _, path in ipairs(possiblePaths) do
         local result = __getScript(path)
         local success = result ~= nil

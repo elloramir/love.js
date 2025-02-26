@@ -1,11 +1,254 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Love.js</title>
-</head>
-<body>
+<!DOCTYPE html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>Love.js</title> 
+    <link rel="stylesheet" href="index.css">
+</head> 
+<body> 
+    <div class="game-selector">
+        <div class="select-wrapper">
+            <select id="game-select">
+                <option value="">-- Select a game --</option>
+                <option value="basic">Basic Game</option>
+                <option value="spacewar">Space War</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="drop-area" id="drop-area">
+        <div class="love-icon">
+            <span>LÖVE</span>
+        </div>
+        <p class="drop-text">Drag and drop your .love or .zip file here</p>
+        <button class="file-select-btn" id="select-file-btn">Select File</button>
+        <input type="file" id="file-input" accept=".love,.zip">
+    </div>
+
+    <div class="game-container" id="game-container"></div>
+
     <script src="bundle.js"></script>
-</body>
+    <script>
+        let Project;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // First, ensure the Project object is loaded
+            if (typeof window.Project !== 'undefined') {
+                Project = window.Project;
+                initializeApp();
+            }
+        });
+
+        function initializeApp() {
+            // Check URL hash to load predefined games
+            checkHashAndLoadGame();
+
+            // Set up drag and drop area
+            setupDragAndDrop();
+            
+            // Set up game selector
+            setupGameSelector();
+            
+            // Set up file select button
+            document.getElementById('select-file-btn').addEventListener('click', function() {
+                document.getElementById('file-input').click();
+            });
+        }
+
+        function setupDragAndDrop() {
+            const dropArea = document.getElementById('drop-area');
+            const fileInput = document.getElementById('file-input');
+
+            // Handle file selection via input
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    handleFile(e.target.files[0]);
+                }
+            });
+
+            // Drag and drop events
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            // Visual highlight during drag
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, () => {
+                    dropArea.classList.add('dragover');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, () => {
+                    dropArea.classList.remove('dragover');
+                }, false);
+            });
+
+            // Handle dropped files
+            dropArea.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length) {
+                    handleFile(files[0]);
+                }
+            }, false);
+        }
+
+        function handleFile(file) {
+            // Check if it's a .love or .zip file
+            if (file.name.endsWith('.love') || file.name.endsWith('.zip')) {
+                console.log('Valid file:', file.name);
+                loadProjectFromFile(file);
+            } else {
+                alert('Please select a valid .love or .zip file.');
+            }
+        }
+
+        function setupGameSelector() {
+            const selectElement = document.getElementById('game-select');
+            
+            // Set initial value based on current hash
+            const hash = window.location.hash.substring(1);
+            if (hash) {
+                selectElement.value = hash;
+            }
+            
+            // Add event listener for select changes
+            selectElement.addEventListener('change', function() {
+                const selectedGame = this.value;
+                if (selectedGame) {
+                    window.location.hash = selectedGame;
+                    loadGame(selectedGame);
+                } else {
+                    // If "-- Select a game --" is chosen, clear game area
+                    const gameContainer = document.getElementById('game-container');
+                    gameContainer.innerHTML = '';
+                    
+                    // Show the drop area
+                    document.getElementById('drop-area').style.display = 'flex';
+                    
+                    history.pushState("", document.title, window.location.pathname + window.location.search);
+                }
+            });
+        }
+
+        function checkHashAndLoadGame() {
+            const hash = window.location.hash.substring(1);
+            if (hash) {
+                // Update select to reflect hash
+                const selectElement = document.getElementById('game-select');
+                selectElement.value = hash;
+                
+                loadGame(hash);
+            }
+        }
+
+        function loadGame(gameName) {
+            console.log(`Loading game: ${gameName}`);
+            const gamePath = `./games/${gameName}.love`;
+            
+            if (!Project) {
+                console.error('Project module not loaded');
+                alert('Failed to load the game. Project module not available.');
+                return;
+            }
+            
+            // Fall back to standard method
+            Project.loadFromFile(gamePath)
+            .then(project => {
+                placeCanvas(project.canvas);
+            }).catch(error => {
+                console.error('Error loading game:', error);
+                alert(`Error loading game ${gameName}: ${error.message}`);
+            });
+        }
+
+        function loadProjectFromFile(file) {
+            if (!Project) {
+                console.error('Project module not loaded');
+                alert('Failed to load the file. Project module not available.');
+                return;
+            }
+            
+            // Make sure we're using the right method for File objects
+            if (typeof Project.loadFromBlob === 'function') {
+                // If there's a specific Blob/File loader method
+                Project.loadFromBlob(file)
+                .then(project => {
+                    placeCanvas(project.canvas);
+                }).catch(error => {
+                    console.error('Error loading file:', error);
+                    alert(`Error loading file: ${error.message}`);
+                });
+            } else {
+                // Try to handle the File object correctly
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const arrayBuffer = e.target.result;
+                    
+                    if (typeof Project.loadFromArrayBuffer === 'function') {
+                        Project.loadFromArrayBuffer(arrayBuffer, file.name)
+                        .then(project => {
+                            placeCanvas(project.canvas);
+                        }).catch(error => {
+                            console.error('Error loading file data:', error);
+                            alert(`Error loading file: ${error.message}`);
+                        });
+                    } else {
+                        // Last resort, try standard method with blob URL
+                        const blob = new Blob([arrayBuffer], { type: file.type });
+                        const blobURL = URL.createObjectURL(blob);
+                        
+                        Project.loadFromFile(blobURL)
+                        .then(project => {
+                            placeCanvas(project.canvas);
+                            // Clean up the blob URL after use
+                            URL.revokeObjectURL(blobURL);
+                        }).catch(error => {
+                            console.error('Error loading file:', error);
+                            alert(`Error loading file: ${error.message}`);
+                            URL.revokeObjectURL(blobURL);
+                        });
+                    }
+                };
+                reader.onerror = function() {
+                    console.error('Error reading file');
+                    alert('Error reading file');
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        // New function to place canvas in the drop area's position
+        function placeCanvas(canvas) {
+            // Hide the drop area
+            const dropArea = document.getElementById('drop-area');
+            dropArea.style.display = 'none';
+            
+            // Clear any previous canvas
+            const gameContainer = document.getElementById('game-container');
+            gameContainer.innerHTML = '';
+            
+            // Position the container where the drop area was
+            gameContainer.style.display = 'flex';
+            
+            // Add the canvas to the container
+            gameContainer.appendChild(canvas);
+            
+            // Optional: Maintain the same size as the drop area
+            canvas.style.width = '620px';
+            canvas.style.height = '400px';
+        }
+
+        // Watch for URL hash changes
+        window.addEventListener('hashchange', checkHashAndLoadGame);
+    </script>
+</body> 
 </html>

@@ -4,6 +4,7 @@
 
 import Project from "./project.js";
 
-Project.loadFromFile("games/deepdive.love").then(project => {
-	document.body.appendChild(project.canvas);
-});
+window.Project = Project;
+// Project.loadFromFile("games/deepdive.love").then(project => {
+// 	document.body.appendChild(project.canvas);
+// });

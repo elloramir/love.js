@@ -1,3 +1,5 @@
 node_modules
 dist/*.lua
 dist/*.js
+# that game has no license
+dist/games/spacewar.love 
