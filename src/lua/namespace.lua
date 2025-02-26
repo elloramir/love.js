@@ -1,5 +1,9 @@
 love = {}
 
+love.timer = __timer
+love.physics = __physics
+love.filesystem = __filesystem
+love.audio = __audio
 love.keyboard = __keyboard
 love.math = __math
 love.window = __window

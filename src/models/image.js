@@ -26,14 +26,27 @@ class ImageModel {
 		}
 	}
 
-	static loadFromFile(file, gl) {
-		return new Promise((resolve, reject) => {
-			const img = new Image();
-			img.onload = () => {
-				resolve(new ImageModel(gl, img));
-			};
-			img.onerror = reject;
-			img.src = file;
-		});
+	getHeight() {
+		return this.height;
 	}
+
+	getWidth() {
+		return this.width;
+	}
+
+
+	getDimensions() {
+		
+	}
+
+	// static loadFromFile(file, gl) {
+	// 	return new Promise((resolve, reject) => {
+	// 		const img = new Image();
+	// 		img.onload = () => {
+	// 			resolve(new ImageModel(gl, img));
+	// 		};
+	// 		img.onerror = reject;
+	// 		img.src = file;
+	// 	});
+	// }
 };

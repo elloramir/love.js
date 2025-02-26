@@ -12,7 +12,11 @@ import defaultFrag from "./shaders/default.frag.glsl";
 import defaultVert from "./shaders/default.vert.glsl";
 import Graphics from "./modules/graphics.js";
 import MathModule from "./modules/math.js";
+import Audio from "./modules/audio.js";
 import Window from "./modules/window.js";
+import FileSystem from "./modules/filesystem.js";
+import Timer from "./modules/timer.js";
+import Physics from "./modules/physics.js";
 import Keyboard from "./modules/keyboard.js";
 import Shader from "./models/shader.js";
 
@@ -34,26 +38,38 @@ class Project {
 			defaultVert,
 			defaultFrag);
 
+		this.setup();
+	}
+
+	async setup() {
 		// Setup our javascript bindings
-		this.lua.global.set("__window", new Window(this));
-		this.lua.global.set("__keyboard", new Keyboard(this));
-		this.lua.global.set("__graphics", new Graphics(this));
-		this.lua.global.set("__math", MathModule);
+		await this.lua.global.set("__getScript", this.getString.bind(this));
+		await this.lua.global.set("__physics", new Physics(this));
+		await this.lua.global.set("__audio", new Audio(this));
+		await this.lua.global.set("__window", new Window(this));
+		await this.lua.global.set("__keyboard", new Keyboard(this));
+		await this.lua.global.set("__graphics", new Graphics(this));
+		await this.lua.global.set("__filesystem", new FileSystem(this));
+		await this.lua.global.set("__timer", new Timer(this));
+		await this.lua.global.set("__math", MathModule);
 
 		// Setup enviorment
-		this.lua.doString(luaRequire);
-		this.lua.doString(luaNamespace);
+		await this.lua.doString(luaRequire);
+		await this.lua.doString(luaNamespace);
 
 		// User setup (if it have one)
-		if (files["conf.lua"])
-			this.lua.doString(files["conf.lua"]);
+		if (this.files["conf.lua"])
+			await this.lua.doString(this.getString("conf.lua"));
 		
 		// Finaly boot the entry
-		this.lua.doString(files["main.lua"]);
+		await this.lua.doString(this.getString("main.lua"));
 
 		// Save global namespace reference for love
-		this.love = this.lua.global.get("love");
+		this.love = await this.lua.global.get("love");
 		this.love.load();
+
+		// Boot game loop
+		this.mainLoop();
 	}
 
 	static async loadFromFile(filename) {
@@ -69,8 +85,8 @@ class Project {
 		const files = {};
 		for (const fileName of Object.keys(zip.files)) {
 			if (!zip.files[fileName].dir) {
-				// @todo: Check first the mimetype before consider string
-				files[fileName] = await zip.files[fileName].async("string");
+				// Considerer all files as uint8array
+				files[fileName] = await zip.files[fileName].async("uint8array");
 			}
 		}
 
@@ -82,6 +98,17 @@ class Project {
 		const virtualMachine = await factory.createEngine();
 
 		return new Project(files, virtualMachine);
+	}
+
+	getFile(filename) {
+		return this.files[filename];
+	}
+
+	getString(filename) {
+		const arr = this.files[filename];
+		const str = new TextDecoder("utf-8").decode(arr);
+
+		return str;
 	}
 
 	mainLoop(currentTime=0) {
