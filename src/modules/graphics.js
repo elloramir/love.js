@@ -37,6 +37,7 @@ class Graphics {
 
 
 	newImage(filename) {
+		console.log(filename)
 	    const data = this.project.getFile(filename);
 		if (!data)
 			throw "No data found for the image: " + filename;
@@ -82,7 +83,8 @@ class Graphics {
 		return {};
 	}
 
-	draw(tex, x, y, r, sx, sy, ox, oy, kx, ky ) {
-		this.batcher.drawTex(tex, x, y);
+	draw(tex, x=0, y=0, r=0, sx=1, sy=1, ox, oy, kx, ky ) {
+		this.batcher.drawTex(tex, x, y, 0, 1, 1, 0, 0);
+		// tex, x, y, rot, sx, sy, px, py, u1, v1, u2, v2
 	}
 }

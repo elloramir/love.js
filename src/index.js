@@ -5,6 +5,3 @@
 import Project from "./project.js";
 
 window.Project = Project;
-// Project.loadFromFile("games/deepdive.love").then(project => {
-// 	document.body.appendChild(project.canvas);
-// });
