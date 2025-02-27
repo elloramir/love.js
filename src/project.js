@@ -26,8 +26,6 @@ export default class Project {
 		this.lua = virtualMachine;
 		this.pastTime = 0;
 		this.deltaTime = 0;
-		this.targetFPS = 60;
-		this.timeCAP = 1/this.targetFPS;
 
 		this.canvas = createCanvas(800, 600);
 		this.gl = this.canvas.getContext("webgl");
@@ -52,7 +50,7 @@ export default class Project {
 		await this.lua.global.set("__graphics", new Graphics(this));
 		await this.lua.global.set("__filesystem", new FileSystem(this));
 		await this.lua.global.set("__timer", new Timer(this));
-		await this.lua.global.set("__math", MathModule);
+		await this.lua.global.set("__math", new MathModule(this));
 
 		// Setup environment
 		await this.lua.doString(luaRequire);
