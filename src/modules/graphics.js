@@ -3,6 +3,7 @@
 
 import Font from "../models/font.js";
 import ImageModel from "../models/image.js";
+import CanvasModel from "../models/canvas.js";
 import Quad from "../models/quad.js";
 import { LuaMultiReturn } from "wasmoon";
 
@@ -451,7 +452,7 @@ export default class Graphics {
      * Creates a new Canvas object for offscreen rendering.
      */
     newCanvas(width, height) {
-        // Implementação aqui
+        return new CanvasModel(this.project.gl, width, height);
     }
 
     /**
@@ -521,7 +522,7 @@ export default class Graphics {
             throw "No data found for the image: " + filename;
 
         const model = new ImageModel(this.project.gl, data);
-        
+
         return model;
     }
 

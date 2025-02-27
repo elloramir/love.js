@@ -10,13 +10,13 @@ import Batcher from "./batcher.js";
 import Font from "./models/font.js";
 import Shader from "./models/shader.js";
 
-import luaRequire from "./lua/require.lua";
 import luaNamespace from "./lua/namespace.lua";
 import luaPolyfill from "./lua/polyfill.lua";
 
 import defaultFrag from "./shaders/default.frag.glsl";
 import defaultVert from "./shaders/default.vert.glsl";
 
+import ImageModule from "./modules/image.js";
 import Graphics from "./modules/graphics.js";
 import MathModule from "./modules/math.js";
 import Audio from "./modules/audio.js";
@@ -29,8 +29,9 @@ import System from "./modules/system.js";
 
 
 export default class Project {
-	constructor(files, virtualMachine) {
+	constructor(files, virtualMachine, factory) {
 		this.files = files;
+		this.factory = factory;
 		this.lua = virtualMachine;
 		this.pastTime = 0;
 		this.deltaTime = 0;
@@ -64,10 +65,15 @@ export default class Project {
 		// Preload all content
 		for (const [key, content] of this.files) {
 			this.files[key] = await content;
+
+			// Mount lua files
+			if (key.endsWith(".lua")) {
+				this.factory.mountFile(key, this.getString(key));
+			}
 		}
 
 		// Setup JS bindings
-		await this.lua.global.set("__getScript", this.getString.bind(this));
+		await this.lua.global.set("__image", new ImageModule(this));
 		await this.lua.global.set("__physics", new Physics(this));
 		await this.lua.global.set("__audio", new Audio(this));
 		await this.lua.global.set("__system", new System(this));
@@ -79,7 +85,6 @@ export default class Project {
 		await this.lua.global.set("__math", new MathModule(this));
 
 		// Setup environment
-		await this.lua.doString(luaRequire);
 		await this.lua.doString(luaNamespace);
 		await this.lua.doString(luaPolyfill);
 
@@ -134,8 +139,10 @@ export default class Project {
 			throw "No entry point found";
 
 		// Create Lua VM
-		const virtualMachine = await new LuaFactory().createEngine();
-		return new Project(files, virtualMachine);
+		const factory = new LuaFactory();
+		const virtualMachine = await factory.createEngine();
+
+		return new Project(files, virtualMachine, factory);
 	}
 
 	getFile(filename) {
@@ -144,6 +151,7 @@ export default class Project {
 
 	getString(filename) {
 		const arr = this.files[filename];
+		if (!arr) return null;
 		return new TextDecoder("utf-8").decode(arr);
 	}
 

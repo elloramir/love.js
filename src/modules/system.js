@@ -23,14 +23,14 @@ export default class System {
      * Gets information about the system's power supply.
      */
     getPowerInfo() {
-        // Implementação aqui
+        return 1;
     }
 
     /**
      * Gets the amount of logical processor in the system.
      */
     getProcessorCount() {
-        // Implementação aqui
+        return navigator.hardwareConcurrency;
     }
 
     /**

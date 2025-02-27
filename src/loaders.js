@@ -23,14 +23,9 @@ export function soundLoader(uint8array) {
 		const blob = new Blob([data]);
 		const url = URL.createObjectURL(blob);
 		const audio = new Audio();
+
 		audio.src = url;
-		
-		audio.oncanplaythrough = () => {
-			resolve(audio);
-		};
-		
-		audio.onerror = () => {
-			reject("The sound data is not valid");
-		};
+		audio.oncanplaythrough = () => resolve(audio);
+		audio.onerror = () => reject("The sound data is not valid");
 	});
 }

@@ -117,7 +117,7 @@ export default class Window {
      * Gets the window title.
      */
     getTitle() {
-        // Implementação aqui
+        return document.title;
     }
 
     /**

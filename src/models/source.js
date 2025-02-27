@@ -8,6 +8,8 @@ class Source {
         this.audio = audio;
     }
 
-    setLooping() {
-    }
+    setLooping() {}
+    play() {}
+    setVolume() {}
+    getVolume() { return 1; }
 };

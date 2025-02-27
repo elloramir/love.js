@@ -1,5 +1,6 @@
 love = {}
 
+love.image = __image
 love.timer = __timer
 love.system = __system
 love.physics = __physics

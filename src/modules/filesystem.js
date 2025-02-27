@@ -195,7 +195,7 @@ export default class Filesystem {
      * Read the contents of a file.
      */
     read(name, size) {
-        return this.project.getString(filename)?.substr(0, size);
+        return this.project.getString(name)?.substr(0, size);
     }
 
     /**
