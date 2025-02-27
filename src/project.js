@@ -4,7 +4,7 @@
 import JSZip from "jszip";
 import { LuaFactory } from "wasmoon";
 import { createCanvas } from "./helpers.js";
-import { imageLoader, soundLoader } from "./loaders.js";
+import { imageLoader, soundLoader, fontLoader } from "./loaders.js";
 
 import Batcher from "./batcher.js";
 import Font from "./models/font.js";
@@ -36,17 +36,21 @@ export default class Project {
 		this.pastTime = 0;
 		this.deltaTime = 0;
 		this.isPlaying = false;
+		this.ticks = 0;
+		this.fps = 0;
+		this.accumulator = 0;
 
 		this.canvas = createCanvas(800, 600, true);
 		this.gl = this.canvas.getContext("webgl");
 		this.batcher = new Batcher(this.gl);
 		this.defaultShader = new Shader(this.gl, defaultVert, defaultFrag);
-        this.defaultFont = new Font(this.gl, "Arial", 20, false);
+		this.defaultFont = new Font(this.gl, "Arial", 20, false);
 
 		// First user interaction (audio)
 		this.batcher.frame();
 		this.batcher.setShader(this.defaultShader);
 		this.batcher.setColor(1, 1, 1, 1);
+		this.batcher.clear(0, 0, 0);
 		this.batcher.drawStr(this.defaultFont,
 			"click here to start game",
 			this.canvas.width/2 - 150,
@@ -120,6 +124,7 @@ export default class Project {
 		const files = new Map();
 		const imageExtensions = ['png', 'jpg', 'jpeg', 'gif'];
 		const soundExtensions = ['mp3', 'wav', 'ogg'];
+		const fontExtensions = ['ttf', 'otf'];
 
 		for (const zipFilename of Object.keys(zip.files)) {
 			if (zip.files[zipFilename].dir) continue;
@@ -127,16 +132,18 @@ export default class Project {
 			const fileData = zip.files[zipFilename].async("uint8array");
 			const extension = zipFilename.split('.').pop().toLowerCase();
 
-			// Process media files with their appropriate loaders
 			let media;
 			if (imageExtensions.includes(extension)) {
 				media = imageLoader(fileData);
 			} else if (soundExtensions.includes(extension)) {
 				media = soundLoader(fileData);
+			} else if (fontExtensions.includes(extension)) {
+				const fontName = zipFilename.split('/').pop().split('.')[0];
+				media = fontLoader(fileData, fontName);
 			} else {
 				media = fileData;
 			}
-			  
+
 			files.set(zipFilename, media);
 		}
 
@@ -166,11 +173,20 @@ export default class Project {
 
 		this.deltaTime = (currentTime - this.pastTime) / 1000;
 		this.pastTime = currentTime;
+		this.accumulator += this.deltaTime;
+		this.ticks++;
+
+		if (this.accumulator > 1) {
+			this.fps = this.ticks;
+			this.ticks = 0;
+			this.accumulator = 0;
+		}
 
 		this.love.update(this.deltaTime);
 		
 		this.batcher.frame();
 		this.batcher.setShader(this.defaultShader);
+		this.batcher.clear(0, 0, 0);
 		this.love.draw();
 		this.batcher.flush();
 

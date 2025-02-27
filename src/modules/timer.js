@@ -25,7 +25,7 @@ export default class Timer {
      * Returns the current frames per second.
      */
     getFPS() {
-        return 60;
+        return this.project.fps;
     }
 
     /**

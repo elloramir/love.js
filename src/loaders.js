@@ -29,3 +29,20 @@ export function soundLoader(uint8array) {
 		audio.onerror = () => reject("The sound data is not valid");
 	});
 }
+
+
+export function fontLoader(uint8array, fontName) {
+	return new Promise(async (resolve, reject) => {
+		const data = await uint8array;
+		const blob = new Blob([data]);
+		const url = URL.createObjectURL(blob);
+
+		const fontFace = new FontFace(fontName, `url(${url})`);
+		fontFace.load()
+			.then(() => {
+				document.fonts.add(fontFace);
+				resolve(fontFace);
+			})
+			.catch((error) => reject("The font data is not valid: " + error));
+	});
+}

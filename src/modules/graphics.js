@@ -13,7 +13,7 @@ export default class Graphics {
         this.width = project.canvas.width;
         this.height = project.canvas.height;
         this.batcher = project.batcher;
-        this.currentFont = project.defaultFont;   
+        this.currentFont = project.defaultFont;
     }
 
     /**
@@ -88,8 +88,45 @@ export default class Graphics {
      * 
      * When using the default shader anything drawn with this function will be tinted according to the currently selected color.  Set it to pure white to preserve the object's original colors.
      */
-    draw(drawable, x, y, r, sx, sy, ox, oy, kx, ky) {
-        this.batcher.drawTex(drawable, x, y);
+    draw(drawable, x, y, r = 0, sx = 1, sy = 1, ox = 0, oy = 0, kx = 0, ky = 0, extra=0) {
+        if (x instanceof Quad) {
+            const quad = x;
+            const u1 = quad.x / quad.sw;
+            const v1 = quad.y / quad.sh;
+            const u2 = u1 + (quad.width / quad.sw);
+            const v2 = v1 + (quad.height / quad.sh);
+            
+            // Rotate parameters
+            x = y;
+            y = r;
+            r = sx;
+            sx = sy;
+            sy = ox;
+            ox = oy / quad.width;
+            oy = kx / quad.height;
+            kx = ky;
+            ky = extra;
+            
+            this.batcher.setTexture(drawable);
+            this.batcher.pushQuad(x, y, quad.width, quad.height, r, sx, sy, ox, oy, u1, v1, u2, v2);
+        }
+        else {
+            if (drawable instanceof CanvasModel) {
+                // For framebuffers, we need to flip the V texture coordinates
+                // since WebGL has (0,0) at bottom-left
+                this.batcher.drawTex(
+                    drawable,
+                    x, y,
+                    r, sx, sy,
+                    0, 0,
+                    0, 1,  // u1, v1 - Starting at bottom-left of texture
+                    1, 0   // u2, v2 - Ending at top-right of texture
+                );
+            } else {
+                // Full frame images
+                this.batcher.drawTex(drawable, x, y, r, sx, sy);
+            }
+        }
     }
 
     /**
@@ -509,8 +546,15 @@ export default class Graphics {
      * 
      * All variants which accept a filename can also accept a Data object instead.
      */
-    newFont(filename) {
-        // Implementação aqui
+    newFont(filename, size=12) {
+        const data = this.project.getFile(filename);
+        if (!data)
+            throw "No data found for the font: " + filename;
+        
+        const fontName = data.family;
+        const font = new Font(this.project.gl, fontName, size);
+        
+        return font;
     }
 
     /**
@@ -559,7 +603,7 @@ export default class Graphics {
      * The purpose of a Quad is to use a fraction of an image to draw objects, as opposed to drawing entire image. It is most useful for sprite sheets and atlases: in a sprite atlas, multiple sprites reside in same image, quad is used to draw a specific sprite from that image; in animated sprites with all frames residing in the same image, quad is used to draw specific frame from the animation.
      */
     newQuad(x, y, width, height, sw, sh) {
-        // Implementação aqui
+        return new Quad(x, y, width, height, sw, sh);
     }
 
     /**
@@ -660,7 +704,7 @@ export default class Graphics {
      * In versions prior to 11.0, color and byte component values were within the range of 0 to 255 instead of 0 to 1.
      */
     print(text, x, y, r, sx, sy, ox, oy, kx, ky) {
-        this.batcher.drawStr(this.currentFont, text, x, y);
+        // this.batcher.drawStr(this.currentFont, text, x, y);
     }
 
     /**
@@ -731,7 +775,6 @@ export default class Graphics {
      * Scaling lasts until love.draw() exits.
      */
     scale(sx, sy) {
-        // Implementação aqui
     }
 
     /**
@@ -752,7 +795,7 @@ export default class Graphics {
      * Captures drawing operations to a Canvas.
      */
     setCanvas(canvas, mipmap) {
-        this.batcher.setFrameBuffer(canvas?.[1].framebuffer);
+        this.batcher.setCanvas(canvas?.[1]);
     }
 
     /**
@@ -760,8 +803,20 @@ export default class Graphics {
      * 
      * In versions prior to 11.0, color component values were within the range of 0 to 255 instead of 0 to 1.
      */
-    setColor(red, green, blue, alpha = 1) {
-        this.batcher.setColor(red, green, blue, alpha);
+    setColor(red, green, blue, alpha) {
+        let r = red || 1;
+        let g = green || 1;
+        let b = blue || 1;
+        let a = alpha || 1;
+
+        if (red instanceof Object) {
+            r = red[0];
+            g = red[1];
+            b = red[2];
+            a = red[3] || 1;
+        }
+
+        this.batcher.setColor(r, g, b, a);
     }
 
     /**
@@ -793,7 +848,7 @@ export default class Graphics {
      * It's recommended that Font objects are created with love.graphics.newFont in the loading stage and then passed to this function in the drawing stage.
      */
     setFont(font) {
-        // Implementação aqui
+        this.currentFont = font || this.project.defaultFont;
     }
 
     /**

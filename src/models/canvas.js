@@ -3,12 +3,13 @@
 // license that can be found in the LICENSE file.
 
 export default class CanvasModel {
-	constructor(gl, width, height, filter = gl.LINEAR) {
+	constructor(gl, width, height, filter = gl.NEAREST) {
 		this.width = width;
 		this.height = height;
 
 		// Create a texture to render to
 		this.id = gl.createTexture();
+
 		gl.bindTexture(gl.TEXTURE_2D, this.id);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 

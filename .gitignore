@@ -3,3 +3,4 @@ dist/*.lua
 dist/*.js
 # that game has no license
 dist/games/spacewar.love 
+dist/games/paused.love 

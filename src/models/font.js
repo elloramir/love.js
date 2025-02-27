@@ -21,7 +21,7 @@ class Font {
 		"ŠšŒœŸÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ" +
 		"®™£´~^ ";
 
-	constructor(gl, fontName, size = 16, isLowscale=true, glyphset=Font.UNICODE) {
+	constructor(gl, fontName, size, isLowscale=true, glyphset=Font.UNICODE) {
 		this.gl = gl;
 		this.fontName = fontName;
 		this.glyphs = new Map();
@@ -89,7 +89,7 @@ class Font {
 		
 		// Apply sharp edge preservation if necessary
 		if (this.isLowscale) {
-			this.preserveCrispEdges(canvas, 0.4); // Adjusted threshold for better edge detection
+			this.preserveCrispEdges(canvas, 0.8); // Adjusted threshold for better edge detection
 		}
 		
 		this.atlas = new ImageModel(this.gl, canvas);
