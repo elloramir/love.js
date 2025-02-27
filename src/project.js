@@ -10,7 +10,7 @@ import Batcher from "./batcher.js";
 import Font from "./models/font.js";
 import Shader from "./models/shader.js";
 
-import luaNamespace from "./lua/namespace.lua";
+import luaLove from "./lua/love.lua";
 import luaPolyfill from "./lua/polyfill.lua";
 
 import defaultFrag from "./shaders/default.frag.glsl";
@@ -85,7 +85,7 @@ export default class Project {
 		await this.lua.global.set("__math", new MathModule(this));
 
 		// Setup environment
-		await this.lua.doString(luaNamespace);
+		await this.lua.doString(luaLove);
 		await this.lua.doString(luaPolyfill);
 
 		// Load config if available
@@ -97,6 +97,11 @@ export default class Project {
 
 		// Get love reference
 		this.love = await this.lua.global.get("love");
+
+		// Setup stuff based on config
+		this.love.conf(this.love.configs);
+		this.canvas.width = this.love.configs.window.width;
+		this.canvas.height = this.love.configs.window.height;
 
 		// Start game
 		this.love.load();

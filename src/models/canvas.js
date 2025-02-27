@@ -44,6 +44,6 @@ export default class CanvasModel {
 	}
 
 	getDimensions() {
-		throw "Sexo";
+		return new LuaMultiReturn(this.width, this.height);
 	}
 }

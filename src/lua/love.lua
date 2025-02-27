@@ -1,0 +1,73 @@
+love = {}
+
+love.image = __image
+love.timer = __timer
+love.system = __system
+love.physics = __physics
+love.filesystem = __filesystem
+love.audio = __audio
+love.keyboard = __keyboard
+love.math = __math
+love.window = __window
+love.graphics = __graphics
+
+love.conf = function() end
+love.load = function() end
+love.update = function() end
+love.draw = function() end
+love.keypressed = function() end
+love.keyreleased = function() end
+
+love.configs = {}
+love.configs.identity = nil                    
+love.configs.appendidentity = false            
+love.configs.version = "11.4"                  
+love.configs.console = false                   
+love.configs.accelerometerjoystick = true      
+love.configs.externalstorage = false           
+love.configs.gammacorrect = false              
+love.configs.audio = {
+    mic = false,
+    mixwithsystem = true
+}
+love.configs.window = {
+    title = "Untitled",
+    icon = nil,
+    width = 800,
+    height = 600,
+    borderless = false,
+    resizable = false,
+    minwidth = 1,
+    minheight = 1,
+    fullscreen = false,
+    fullscreentype = "desktop",
+    vsync = 1,
+    msaa = 0,
+    depth = nil,
+    stencil = nil,
+    display = 1,
+    highdpi = false,
+    usedpiscale = true,
+    x = nil,
+    y = nil
+}
+love.configs.modules = {
+    audio = true,
+    data = true,
+    event = true,
+    font = true,
+    graphics = true,
+    image = true,
+    joystick = true,
+    keyboard = true,
+    math = true,
+    mouse = true,
+    physics = true,
+    sound = true,
+    system = true,
+    thread = true,
+    timer = true,
+    touch = true,
+    video = true,
+    window = true
+}

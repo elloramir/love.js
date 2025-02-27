@@ -61,7 +61,7 @@ export default class Graphics {
      * In versions prior to background color instead.
      */
     clear(r, g, b, a, clearstencil, cleardepth) {
-        // Implementação aqui
+        this.batcher.clear(r, g, b);
     }
 
     /**
@@ -89,7 +89,7 @@ export default class Graphics {
      * When using the default shader anything drawn with this function will be tinted according to the currently selected color.  Set it to pure white to preserve the object's original colors.
      */
     draw(drawable, x, y, r, sx, sy, ox, oy, kx, ky) {
-        this.batcher.drawTex(drawable, x, y, 0, 1, 1, 0, 0);
+        this.batcher.drawTex(drawable, x, y);
     }
 
     /**
@@ -638,7 +638,7 @@ export default class Graphics {
      * This function is always used to reverse a previous push operation. It returns the current transformation state to what it was before the last preceding push.
      */
     pop() {
-        // Implementação aqui
+        this.batcher.pop();
     }
 
     /**
@@ -684,7 +684,7 @@ export default class Graphics {
      * This function is always used to prepare for a corresponding pop operation later. It stores the current coordinate transformation state into the transformation stack and keeps it active. Later changes to the transformation can be undone by using the pop operation, which returns the coordinate transform to the state it was in before calling push.
      */
     push(stack) {
-        // Implementação aqui
+        this.batcher.push();
     }
 
     /**
@@ -752,7 +752,7 @@ export default class Graphics {
      * Captures drawing operations to a Canvas.
      */
     setCanvas(canvas, mipmap) {
-        // Implementação aqui
+        this.batcher.setFrameBuffer(canvas?.[1].framebuffer);
     }
 
     /**
@@ -924,7 +924,7 @@ export default class Graphics {
      * Translating using whole numbers will prevent tearing/blurring of images and fonts draw after translating.
      */
     translate(dx, dy) {
-        // Implementação aqui
+        this.batcher.translate(dx, dy);
     }
 
     /**
