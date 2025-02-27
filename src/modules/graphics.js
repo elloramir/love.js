@@ -4,6 +4,7 @@
 import Font from "../models/font.js";
 import ImageModel from "../models/image.js";
 import Quad from "../models/quad.js";
+import { LuaMultiReturn } from "wasmoon";
 
 export default class Graphics {
     constructor(project) {
@@ -209,7 +210,7 @@ export default class Graphics {
      * Gets the width and height in pixels of the window.
      */
     getDimensions() {
-        // Implementação aqui
+        return new LuaMultiReturn(this.width, this.height);
     }
 
     /**

@@ -1,6 +1,7 @@
 love = {}
 
 love.timer = __timer
+love.system = __system
 love.physics = __physics
 love.filesystem = __filesystem
 love.audio = __audio

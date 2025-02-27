@@ -16,7 +16,7 @@ export default class System {
      * Gets the current operating system. In general, L├ûVE abstracts away the need to know the current operating system, but there are a few cases where it can be useful (especially in combination with os.execute.)
      */
     getOS() {
-        // Implementação aqui
+        return navigator.userAgent;
     }
 
     /**

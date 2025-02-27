@@ -4,8 +4,9 @@
 
 
 export function imageLoader(uint8array) {
-	return new Promise((resolve, reject) => {
-		const blob = new Blob([uint8array]);
+	return new Promise(async (resolve, reject) => {
+		const data = await uint8array;
+		const blob = new Blob([data]);
 		const url = URL.createObjectURL(blob);
 		const image = new Image();
 
@@ -17,18 +18,19 @@ export function imageLoader(uint8array) {
 
 
 export function soundLoader(uint8array) {
-  return new Promise((resolve, reject) => {
-    const blob = new Blob([uint8array]);
-    const url = URL.createObjectURL(blob);
-    const audio = new Audio();
-    audio.src = url;
-    
-    audio.oncanplaythrough = () => {
-      resolve(audio);
-    };
-    
-    audio.onerror = () => {
-      reject("The sound data is not valid");
-    };
-  });
+	return new Promise(async (resolve, reject) => {
+		const data = await uint8array;
+		const blob = new Blob([data]);
+		const url = URL.createObjectURL(blob);
+		const audio = new Audio();
+		audio.src = url;
+		
+		audio.oncanplaythrough = () => {
+			resolve(audio);
+		};
+		
+		audio.onerror = () => {
+			reject("The sound data is not valid");
+		};
+	});
 }
