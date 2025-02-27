@@ -11,7 +11,7 @@ export default class Graphics {
         this.width = project.canvas.width;
         this.height = project.canvas.height;
         this.batcher = project.batcher;
-        this.defaultFont = new Font(project.gl, "Arial", 20, false);
+        this.currentFont = project.defaultFont;   
     }
 
     /**
@@ -658,7 +658,7 @@ export default class Graphics {
      * In versions prior to 11.0, color and byte component values were within the range of 0 to 255 instead of 0 to 1.
      */
     print(text, x, y, r, sx, sy, ox, oy, kx, ky) {
-        this.batcher.drawStr(this.defaultFont, text, x, y);
+        this.batcher.drawStr(this.currentFont, text, x, y);
     }
 
     /**

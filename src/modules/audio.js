@@ -7,6 +7,8 @@ import Source from "../models/source";
 export default class Audio {
     constructor(project) {
         this.project = project;
+        this.sourceCache = new Map();
+        this.activeSources = new Set();
     }
 
     /**
@@ -117,8 +119,16 @@ export default class Audio {
      * Sources created from SoundData are always static.
      */
     newSource(filename, type) {
-        // Implementação aqui
-        return new Source();
+        if (this.sourceCache.has(filename)) {
+            return this.sourceCache.get(filename);
+        }
+
+        const data = this.project.getFile(filename);
+        if (!data) throw new Error(`No data found for the audio: ${filename}`);
+
+        const source = new Source(data);
+        this.sourceCache.set(filename, source);
+        return source;
     }
 
     /**
@@ -132,7 +142,8 @@ export default class Audio {
      * Plays the specified Source.
      */
     play(source) {
-        // Implementação aqui
+        source.audio.play();
+        this.activeSources.add(source);
     }
 
     /**
@@ -197,7 +208,14 @@ export default class Audio {
      * Stops currently played sources.
      */
     stop(source) {
-        // Implementação aqui
+        source.audio.pause();
+        source.audio.currentTime = 0;
+        this.activeSources.delete(source);
     }
 
+    clearAll() {
+        // Stop all active sources
+        for (const source of this.activeSources)
+            this.stop(source);
+    }
 }

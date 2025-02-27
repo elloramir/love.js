@@ -42,12 +42,16 @@ class Batcher {
 		this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, indices, this.gl.STATIC_DRAW);
 	}
 
+	clear(r, g, b) {
+		this.gl.clearColor(r, g, b, 1);
+		this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+	}
+
 	frame() {
 		this.gl.enable(this.gl.BLEND);
 		this.gl.disable(this.gl.CULL_FACE);
 		this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
-		this.gl.clearColor(0, 0, 0, 1);
-		this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+		this.clear(0, 0, 0);
 	}
 
 	flush() {

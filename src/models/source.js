@@ -4,11 +4,10 @@
 
 export default
 class Source {
-    constructor() {
-        
+    constructor(audio) {
+        this.audio = audio;
     }
 
     setLooping() {
-        
     }
 };

@@ -6,7 +6,7 @@ import { isPowerOf2 } from "../helpers.js"
 
 export default
 class ImageModel {
-	constructor(gl, img, filter=gl.NEAREST) {
+	constructor(gl, img, filter=gl.LINEAR) {
 		this.id = gl.createTexture();
 		this.width = img.width;
 		this.height = img.height;

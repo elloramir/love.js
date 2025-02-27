@@ -4,12 +4,13 @@
 import JSZip from "jszip";
 import { LuaFactory } from "wasmoon";
 import { createCanvas } from "./helpers.js";
-import { imageLoader } from "./loaders.js";
+import { imageLoader, soundLoader } from "./loaders.js";
 import Batcher from "./batcher.js";
 import luaRequire from "./lua/require.lua";
 import luaNamespace from "./lua/namespace.lua";
 import defaultFrag from "./shaders/default.frag.glsl";
 import defaultVert from "./shaders/default.vert.glsl";
+import Font from "./models/font.js";
 import Graphics from "./modules/graphics.js";
 import MathModule from "./modules/math.js";
 import Audio from "./modules/audio.js";
@@ -26,11 +27,13 @@ export default class Project {
 		this.lua = virtualMachine;
 		this.pastTime = 0;
 		this.deltaTime = 0;
+		this.isPlaying = false;
 
-		this.canvas = createCanvas(800, 600);
+		this.canvas = createCanvas(800, 600, true);
 		this.gl = this.canvas.getContext("webgl");
 		this.batcher = new Batcher(this.gl);
 		this.defaultShader = new Shader(this.gl, defaultVert, defaultFrag);
+        this.defaultFont = new Font(this.gl, "Arial", 20, false);
 
 		this.setup();
 	}
@@ -65,10 +68,25 @@ export default class Project {
 
 		// Get love reference
 		this.love = await this.lua.global.get("love");
-		this.love.load();
 
-		// Start game loop
-		this.mainLoop();
+		// First user interaction (audio)
+		this.batcher.frame();
+		this.batcher.setShader(this.defaultShader);
+		this.love.graphics.setColor(1, 1, 1)
+		this.love.graphics.print("click here to start game",
+			this.canvas.width/2 - 150,
+			this.canvas.height/2);
+		this.batcher.flush();
+
+		let interaction = false;
+		this.canvas.addEventListener("click", () => {
+			if (!interaction) {
+				interaction = true;
+				// Start game loop
+				this.love.load();
+				this.play();
+			} 
+		});
 	}
 
 	static async loadFromFile(filename) {
@@ -82,18 +100,24 @@ export default class Project {
 		// Extract files from .zip/.love
 		const files = new Map();
 		const imageExtensions = ['png', 'jpg', 'jpeg', 'gif'];
+		const soundExtensions = ['mp3', 'wav', 'ogg'];
 
 		for (const zipFilename of Object.keys(zip.files)) {
 			if (zip.files[zipFilename].dir) continue;
 
 			const fileData = await zip.files[zipFilename].async("uint8array");
 			const extension = zipFilename.split('.').pop().toLowerCase();
-			
-			// Process images differently, other files as binary
-			const media = imageExtensions.includes(extension) 
-				? imageLoader(fileData) 
-				: Promise.resolve(fileData);
-				
+
+			// Process media files with their appropriate loaders
+			let media;
+			if (imageExtensions.includes(extension)) {
+				media = imageLoader(fileData);
+			} else if (soundExtensions.includes(extension)) {
+				media = soundLoader(fileData);
+			} else {
+				media = Promise.resolve(fileData);
+			}
+			  
 			files.set(zipFilename, media);
 		}
 
@@ -115,6 +139,9 @@ export default class Project {
 	}
 
 	mainLoop(currentTime = 0) {
+		if (!this.isPlaying)
+			return;
+
 		this.deltaTime = (currentTime - this.pastTime) / 1000;
 		this.pastTime = currentTime;
 
@@ -126,5 +153,19 @@ export default class Project {
 		this.batcher.flush();
 
 		requestAnimationFrame(this.mainLoop.bind(this));
+	}
+
+	stop() {
+		this.isPlaying = false;
+	}
+
+	play() {
+		this.isPlaying = true;
+		requestAnimationFrame(this.mainLoop.bind(this));
+	}
+
+	exit() {
+		this.love.audio.clearAll();
+		this.isPlaying = false;
 	}
 }

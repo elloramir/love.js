@@ -31,6 +31,7 @@
     <script src="bundle.js"></script>
     <script>
         let Project;
+        let currentProject;
         
         document.addEventListener('DOMContentLoaded', function() {
             // First, ensure the Project object is loaded
@@ -151,6 +152,9 @@
         }
 
         function loadGame(gameName) {
+            if(currentProject)
+                currentProject.exit();
+
             console.log(`Loading game: ${gameName}`);
             const gamePath = `./games/${gameName}.love`;
             
@@ -164,6 +168,7 @@
             Project.loadFromFile(gamePath)
             .then(project => {
                 placeCanvas(project.canvas);
+                currentProject = project;
             }).catch(error => {
                 console.error('Error loading game:', error);
                 alert(`Error loading game ${gameName}: ${error.message}`);

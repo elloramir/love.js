@@ -127,8 +127,8 @@ export default class MathModule {
     /**
      * Generates a pseudo-random number in a platform independent manner. The default love.run seeds this function at startup, so you generally don't need to seed it yourself.
      */
-    random(max) {
-        return Math.floor(Math.random() * max);
+    random(min, max) {
+        return Math.floor(Math.random() * max + min);
     }
 
     /**
