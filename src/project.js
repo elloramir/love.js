@@ -2,16 +2,13 @@
 // Use of this source code is governed by a MIT license
 
 import JSZip from "jszip";
-import { LuaFactory } from "wasmoon";
+import * as luainjs from "./parser";
 import { createCanvas } from "./helpers.js";
 import { imageLoader, soundLoader, fontLoader } from "./loaders.js";
 
 import Batcher from "./batcher.js";
 import Font from "./models/font.js";
 import Shader from "./models/shader.js";
-
-import luaLove from "./lua/love.lua";
-import luaPolyfill from "./lua/polyfill.lua";
 
 import defaultFrag from "./shaders/default.frag.glsl";
 import defaultVert from "./shaders/default.vert.glsl";
@@ -29,10 +26,9 @@ import System from "./modules/system.js";
 
 
 export default class Project {
-	constructor(files, virtualMachine, factory) {
+	constructor(files, luaEnv) {
 		this.files = files;
-		this.factory = factory;
-		this.lua = virtualMachine;
+		this.luaEnv = luaEnv;
 		this.pastTime = 0;
 		this.deltaTime = 0;
 		this.isPlaying = false;
@@ -46,85 +42,131 @@ export default class Project {
 		this.defaultShader = new Shader(this.gl, defaultVert, defaultFrag);
 		this.defaultFont = new Font(this.gl, "Arial", 20, false);
 
-		// First user interaction (audio)
-		this.batcher.frame();
-		this.batcher.setShader(this.defaultShader);
-		this.batcher.setColor(1, 1, 1, 1);
-		this.batcher.clear(0, 0, 0);
-		this.batcher.drawStr(this.defaultFont,
-			"click here to start game",
-			this.canvas.width/2 - 150,
-			this.canvas.height/2);
-		this.batcher.flush();
-
-		// Start game loop
-		this.canvas.addEventListener("click", () => {
-			this.setup();
-		}, {
-			once: true
-		});
+		this.setup();
 	}
 
 	async setup() {
 		// Preload all content
-		for (const [key, content] of this.files) {
-			this.files[key] = await content;
+		for (const [key, content] of this.files)
+			this.files.set(key, await content);
 
-			// Mount lua files
-			if (key.endsWith(".lua")) {
-				this.factory.mountFile(key, this.getString(key));
-			}
+		// const loadString = (filename) => {
+		// 	const arr = this.files.get(filename);
+		// 	if (!arr) return null;
+		// 	let content = new TextDecoder("utf-8").decode(arr);
+		// 	return content.replace(/[^\x00-\x7F]/g, '');
+		// };
+
+		const Module = (cls) => new luainjs.Table(new cls(this));
+
+		const love = new luainjs.Table({
+			image:       Module(ImageModule),
+			physics:     Module(Physics),
+			audio:       Module(Audio),
+			system:      Module(System),
+			window:      Module(Window),
+			keyboard:    Module(Keyboard),
+			graphics:    Module(Graphics),
+			filesystem:  Module(FileSystem),
+			timer:       Module(Timer),
+			math:        Module(MathModule),
+
+			mouse: new luainjs.Table({
+				setVisible: () => {},
+				getPosition: () => [0, 0],
+				isDown: () => false,
+			}),
+
+
+			load: () => {},
+			update: () => {},
+			draw: () => {},
+			keypressed: () => {},
+			keyreleased: () => {},
+		});
+
+		const sanitize = (filename, a, b, c) => {
+			if (filename.startsWith("./"))
+				filename = filename.slice(2);
+			if (filename.endsWith(".lua"))
+				filename = filename.replace(/\./g, "/").replace("/lua", ".lua");
+			return filename;
+		};
+
+		const luaEnv = luainjs.createEnv({
+			fileExists: (p) => this.files.has(sanitize(p)),
+			loadFile: (p) => this.getString(sanitize(p)),
+		});
+
+		this.luaEnv = luaEnv;
+		luaEnv.loadLib("love", love);
+		luaEnv.loadLib("unpack", 
+			require("./parser/lib/table").libTable.strValues.unpack);
+
+		const luaScript = luaEnv.parse(this.getString("main.lua"));
+		luaScript.exec();
+
+		love.strValues.load();
+		this.love = love.strValues;
+		this.play();
+	}
+
+	mainLoop(currentTime = 0) {
+		if (!this.isPlaying) return;
+
+		this.deltaTime = (currentTime - this.pastTime) / 1000;
+		this.pastTime = currentTime;
+		this.accumulator += this.deltaTime;
+		this.ticks++;
+
+		if (this.accumulator > 1) {
+			this.fps = this.ticks;
+			this.ticks = 0;
+			this.accumulator = 0;
 		}
 
-		// Setup JS bindings
-		await this.lua.global.set("__image", new ImageModule(this));
-		await this.lua.global.set("__physics", new Physics(this));
-		await this.lua.global.set("__audio", new Audio(this));
-		await this.lua.global.set("__system", new System(this));
-		await this.lua.global.set("__window", new Window(this));
-		await this.lua.global.set("__keyboard", new Keyboard(this));
-		await this.lua.global.set("__graphics", new Graphics(this));
-		await this.lua.global.set("__filesystem", new FileSystem(this));
-		await this.lua.global.set("__timer", new Timer(this));
-		await this.lua.global.set("__math", new MathModule(this));
+		this.love.update(this.deltaTime);
 
-		// Setup environment
-		await this.lua.doString(luaLove);
-		await this.lua.doString(luaPolyfill);
+		this.batcher.frame();
+		this.batcher.setShader(this.defaultShader);
+		this.batcher.clear(0, 0, 0);
+		this.love.draw();
+		this.batcher.flush();
 
-		// Load config if available
-		if (this.files.get("conf.lua"))
-			await this.lua.doString(this.getString("conf.lua"));
-		
-		// Boot the entry point
-		await this.lua.doString(this.getString("main.lua"));
+		requestAnimationFrame(this.mainLoop.bind(this));
+	}
 
-		// Get love reference
-		this.love = await this.lua.global.get("love");
+	play() {
+		this.isPlaying = true;
+		requestAnimationFrame(this.mainLoop.bind(this));
+	}
 
-		// Setup stuff based on config
-		this.love.conf(this.love.configs);
-		this.canvas.width = this.love.configs.window.width;
-		this.canvas.height = this.love.configs.window.height;
+	stop() {
+		this.isPlaying = false;
+	}
 
-		// Start game
-		this.love.load();
-		this.play();
+	getFile(filename) {
+		return this.files.get(filename);
+	}
+
+	getString(filename) {
+		const arr = this.files.get(filename);
+		if (!arr) return null;
+		return new TextDecoder("utf-8").decode(arr)	;
 	}
 
 	static async loadFromFile(filename) {
 		const response = await fetch(filename);
-		if (!response.ok)
-			throw `Could not find project: ${filename}`;
+		if (!response.ok) throw `Could not find project: ${filename}`;
 
 		const blob = await response.blob();
 		const zip = await JSZip.loadAsync(blob);
+		const files = new Map();
 
 		// Extract files from .zip/.love
-		const files = new Map();
 		const imageExtensions = ['png', 'jpg', 'jpeg', 'gif'];
 		const soundExtensions = ['mp3', 'wav', 'ogg'];
-		const fontExtensions = ['ttf', 'otf'];
+		const fontExtensions  = ['ttf', 'otf'];
 
 		for (const zipFilename of Object.keys(zip.files)) {
 			if (zip.files[zipFilename].dir) continue;
@@ -147,63 +189,7 @@ export default class Project {
 			files.set(zipFilename, media);
 		}
 
-		if (!files.get("main.lua"))
-			throw "No entry point found";
-
-		// Create Lua VM
-		const factory = new LuaFactory();
-		const virtualMachine = await factory.createEngine();
-
-		return new Project(files, virtualMachine, factory);
-	}
-
-	getFile(filename) {
-		return this.files[filename];
-	}
-
-	getString(filename) {
-		const arr = this.files[filename];
-		if (!arr) return null;
-		return new TextDecoder("utf-8").decode(arr);
-	}
-
-	mainLoop(currentTime = 0) {
-		if (!this.isPlaying)
-			return;
-
-		this.deltaTime = (currentTime - this.pastTime) / 1000;
-		this.pastTime = currentTime;
-		this.accumulator += this.deltaTime;
-		this.ticks++;
-
-		if (this.accumulator > 1) {
-			this.fps = this.ticks;
-			this.ticks = 0;
-			this.accumulator = 0;
-		}
-
-		this.love.update(this.deltaTime);
-		
-		this.batcher.frame();
-		this.batcher.setShader(this.defaultShader);
-		this.batcher.clear(0, 0, 0);
-		this.love.draw();
-		this.batcher.flush();
-
-		requestAnimationFrame(this.mainLoop.bind(this));
-	}
-
-	stop() {
-		this.isPlaying = false;
-	}
-
-	play() {
-		this.isPlaying = true;
-		requestAnimationFrame(this.mainLoop.bind(this));
-	}
-
-	exit() {
-		this.love?.audio.clearAll();
-		this.stop();
+		if (!files.get("main.lua")) throw "No entry point found";
+		return new Project(files);
 	}
 }

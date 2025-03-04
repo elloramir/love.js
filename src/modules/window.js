@@ -1,7 +1,6 @@
 // Copyright 2025 Elloramir. All rights reserved.
 // Use of this source code is governed by a MIT license.
 
-
 export default class Window {
     constructor(project) {
         this.width = project.canvas.width;

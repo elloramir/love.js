@@ -34,7 +34,7 @@ export default class Timer {
      * This function should only be used to calculate differences between points in time, as the starting time of the timer is unknown.
      */
     getTime() {
-        return this.project.pastTime;
+        return this.project.pastTime/1000;
     }
 
     /**

@@ -2,6 +2,7 @@
 // Use of this source code is governed by a MIT license.
 
 import Source from "../models/source";
+import { Table } from "../parser";
 
 
 export default class Audio {
@@ -128,7 +129,7 @@ export default class Audio {
 
         const source = new Source(data);
         this.sourceCache.set(filename, source);
-        return source;
+        return new Table(source);
     }
 
     /**
@@ -142,7 +143,7 @@ export default class Audio {
      * Plays the specified Source.
      */
     play(source) {
-        source.audio.play();
+        // source.strValues.audio.play();
         this.activeSources.add(source);
     }
 

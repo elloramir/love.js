@@ -2,7 +2,6 @@
 // Use of this source code is governed by a MIT
 // license that can be found in the LICENSE file.
 
-import { LuaMultiReturn } from "wasmoon";
 import { isPowerOf2 } from "../helpers.js"
 
 export default
@@ -11,6 +10,8 @@ class ImageModel {
 		this.id = gl.createTexture();
 		this.width = img.width;
 		this.height = img.height;
+
+		// console.log(this, img)
 
 		const isBase2 = isPowerOf2(img.width * img.height);
 		const wrapMode = isBase2 ? gl.REPEAT : gl.CLAMP_TO_EDGE;
@@ -37,7 +38,7 @@ class ImageModel {
 
 
 	getDimensions() {
-		return new LuaMultiReturn(this.width, this.height);
+		return [this.width, this.height];
 	}
 
 	// static loadFromFile(file, gl) {

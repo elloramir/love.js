@@ -2,7 +2,6 @@
 // Use of this source code is governed by a MIT
 // license that can be found in the LICENSE file.
 
-import { LuaMultiReturn } from "wasmoon";
 
 export default
 class ImageData {
@@ -19,6 +18,6 @@ class ImageData {
         const b = this.data[i + 2] / 255;
         const a = this.data[i + 3] / 255;
 
-        return new LuaMultiReturn(r, g, b, a);
+        return new [r, g, b, a];
     }
 };

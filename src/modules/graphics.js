@@ -5,7 +5,7 @@ import Font from "../models/font.js";
 import ImageModel from "../models/image.js";
 import CanvasModel from "../models/canvas.js";
 import Quad from "../models/quad.js";
-import { LuaMultiReturn } from "wasmoon";
+import { Table } from "../parser";
 
 export default class Graphics {
     constructor(project) {
@@ -88,7 +88,10 @@ export default class Graphics {
      * 
      * When using the default shader anything drawn with this function will be tinted according to the currently selected color.  Set it to pure white to preserve the object's original colors.
      */
-    draw(drawable, x, y, r = 0, sx = 1, sy = 1, ox = 0, oy = 0, kx = 0, ky = 0, extra=0) {
+    draw(drawable, x, y, r = 0, sx = 1, sy = sx, ox = 0, oy = 0, kx = 0, ky = 0, extra=0) {
+        if (drawable.strValues)
+            drawable = drawable.strValues;
+
         if (x instanceof Quad) {
             const quad = x;
             const u1 = quad.x / quad.sw;
@@ -106,7 +109,7 @@ export default class Graphics {
             oy = kx / quad.height;
             kx = ky;
             ky = extra;
-            
+ 
             this.batcher.setTexture(drawable);
             this.batcher.pushQuad(x, y, quad.width, quad.height, r, sx, sy, ox, oy, u1, v1, u2, v2);
         }
@@ -248,7 +251,7 @@ export default class Graphics {
      * Gets the width and height in pixels of the window.
      */
     getDimensions() {
-        return new LuaMultiReturn(this.width, this.height);
+        return [this.width, this.height];
     }
 
     /**
@@ -547,6 +550,9 @@ export default class Graphics {
      * All variants which accept a filename can also accept a Data object instead.
      */
     newFont(filename, size=12) {
+        if (typeof filename === "number")
+            return this.project.defaultFont;
+
         const data = this.project.getFile(filename);
         if (!data)
             throw "No data found for the font: " + filename;
@@ -567,7 +573,7 @@ export default class Graphics {
 
         const model = new ImageModel(this.project.gl, data);
 
-        return model;
+        return new Table(model);
     }
 
     /**
@@ -603,6 +609,10 @@ export default class Graphics {
      * The purpose of a Quad is to use a fraction of an image to draw objects, as opposed to drawing entire image. It is most useful for sprite sheets and atlases: in a sprite atlas, multiple sprites reside in same image, quad is used to draw a specific sprite from that image; in animated sprites with all frames residing in the same image, quad is used to draw specific frame from the animation.
      */
     newQuad(x, y, width, height, sw, sh) {
+        if (sw instanceof Table) {
+            [sw, sh] = sw.strValues.getDimensions();
+        }
+
         return new Quad(x, y, width, height, sw, sh);
     }
 
@@ -795,7 +805,7 @@ export default class Graphics {
      * Captures drawing operations to a Canvas.
      */
     setCanvas(canvas, mipmap) {
-        this.batcher.setCanvas(canvas?.[1]);
+        this.batcher.setCanvas(canvas);
     }
 
     /**
@@ -803,11 +813,11 @@ export default class Graphics {
      * 
      * In versions prior to 11.0, color component values were within the range of 0 to 255 instead of 0 to 1.
      */
-    setColor(red, green, blue, alpha) {
-        let r = red || 1;
-        let g = green || 1;
-        let b = blue || 1;
-        let a = alpha || 1;
+    setColor(red=1, green=1, blue=1, alpha=1) {
+        let r = red;
+        let g = green;
+        let b = blue;
+        let a = alpha;
 
         if (red instanceof Object) {
             r = red[0];

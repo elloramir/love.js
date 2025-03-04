@@ -4,4 +4,7 @@
 
 import Project from "./project.js";
 
-window.Project = Project;
+// window.Project = Project;
+Project.loadFromFile("games/carnaval.love").then(project => {
+	document.body.appendChild(project.canvas);
+});

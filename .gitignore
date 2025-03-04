@@ -1,6 +1,6 @@
 node_modules
 dist/*.lua
-dist/*.js
+dist/bundle.js
 # that game has no license
 dist/games/spacewar.love 
-dist/games/paused.love 
+dist/games/paused.love
